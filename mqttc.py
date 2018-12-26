@@ -19,14 +19,29 @@ port = 1883
 
 def on_connect_tb(client_tb, userdata, flags, rc):
     print("Connected with result code t1:"+str(rc))
+    client_tb.subscribe([("v1/gateway/rpc", 0),
+                         ("v1/gateway/attributes", 0),
+                         ("v1/gateway/attributes/response",0),
+                         ("v1/devices/me/rpc/request/+",0)])
 
 def on_message_tb(client_tb, userdata, msg):
-    print(msg.topic+" " + ":" + str(msg.payload,encoding = "utf-8"))
-    client_tb.subscribe([("v1/gateway/rpc", 0), ("v1/gateway/attributes", 0),("v1/gateway/attributes/response",0)])
+    print("sub:",msg.topic+" " + ":" + str(msg.payload,encoding = "utf-8"))
+    payload = str(msg.payload, encoding="utf-8")
+    payload_json = eval(payload)
+    if msg.topic == "v1/gateway/rpc":
+        print("json paylosd rpc id:",payload_json['data']['id'])
+        # params = eval(payload_json['data']['params'])
+        # print("json paylosd rpc params:",params['id'],params['type'])
 
+        response_rpc = {"device": payload_json['device'], "id": payload_json['data']['id'], "data": {"success": "true"}}
+        on_publish_tb("v1/gateway/rpc",json.dumps(response_rpc),0)
+
+    elif "v1/devices/me/rpc/request/" in msg.topic:
+        on_publish_tb(msg.topic.replace('request', 'response'),json.dumps({"success": "true"}),0)
 
 def on_publish_tb(topic, payload, qos):
-    print("pub:",topic,payload,qos)
+    if topic == "v1/gateway/rpc" or "v1/devices/me/rpc/response/" in topic:
+        print("pub:",topic,payload,qos)
     client_tb.publish(topic, payload, qos)
     # client_tb.disconnect()
 
@@ -44,20 +59,20 @@ def on_message(client, userdata, msg):
     message = {}
     telemetry_message = {}
 
-    print(msg.topic+" " + ":" + str(msg.payload,encoding = "utf-8"))
+    # print(msg.topic+" " + ":" + str(msg.payload,encoding = "utf-8"))
     msg_data = str(msg.payload,encoding = "utf-8")
     d = eval(msg_data)
 
     esl_gateway = d["gmac"]
-    print("gmac:"+esl_gateway)
-    print(len(d["obj"]))
+    # print("gmac:"+esl_gateway)
+    # print(len(d["obj"]))
 
     for i in range(len(d["obj"])):
         # add new device
         # Topic: v1 / gateway / connect
         # Message: {"device": "Device A"}
         if d["obj"][i]["dmac"] != "" and d["obj"][i]["dmac"] not in esl_devices:
-            print(d["obj"][i]["dmac"])
+            # print(d["obj"][i]["dmac"])
             esl_devices.append(d["obj"][i]["dmac"])
             on_publish_tb("v1/gateway/connect",json.dumps({"device":d["obj"][i]["dmac"]}),0)
 
@@ -96,7 +111,7 @@ def on_message(client, userdata, msg):
     on_publish_tb("v1/gateway/attributes", json.dumps(message), 0)
     on_publish_tb("v1/gateway/telemetry",json.dumps(telemetry_message),0)
 
-    print(esl_devices)
+    # print(esl_devices)
 
 client = mqtt.Client("client_for_esl")
 
