@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 import json
 import os
 import time
+import requests
 
 esl_gateway = ""
 esl_devices = []
@@ -32,6 +33,23 @@ def on_message_tb(client_tb, userdata, msg):
         print("json paylosd rpc id:",payload_json['data']['id'])
         # params = eval(payload_json['data']['params'])
         # print("json paylosd rpc params:",params['id'],params['type'])
+        device_mac = payload_json['device']
+        title = payload_json['data']['method']
+        subtitle1 = payload_json['data']['params']
+        print(device_mac,title,subtitle1)
+
+        data = {"data":{"title":title,
+                "subTitle1":subtitle1,
+                "subTitle2":"深圳南山",
+                "currency":"¥",
+                "price":'12.255',
+                "productNumber":'6925785604585'},"temp_id":0,"size":0,"mac":device_mac}
+        requrl = "http://0.0.0.0:8080/txt2json"
+        r = requests.post(requrl, data=json.dumps(data))
+        print(r.text)
+
+        on_publish('kbeacon/subaction/D03304000652',r.text,0)
+
 
         response_rpc = {"device": payload_json['device'], "id": payload_json['data']['id'], "data": {"success": "true"}}
         on_publish_tb("v1/gateway/rpc",json.dumps(response_rpc),0)
@@ -55,6 +73,7 @@ telemetry_message = {}
 def on_message(client, userdata, msg):
     global message
     global telemetry_message
+    global esl_devices,esl_gateway
 
     message = {}
     telemetry_message = {}
@@ -84,9 +103,11 @@ def on_message(client, userdata, msg):
         temperature = float(int(d["obj"][i]["data1"][34:36],16)) + float(int(d["obj"][i]["data1"][36:38],16)/100)   #BYTE 17,18
         data = {
             d["obj"][i]["dmac"]:{"RSSI":d["obj"][i]["rssi"],
-                                 "TYPE":d["obj"][i]["data1"][22:24],    #BYTE 11
+                                 "SensorType":d["obj"][i]["data1"][22:24],    #BYTE 11
                                  "FWVersion":d["obj"][i]["data1"][24:26],   #BYTE 12
                                  "Ability":d["obj"][i]["data1"][26:28],     #BYTE 13,    14 reserve
+                                 "ESLType":d["obj"][i]["data1"][29:30],     #0x0:2.9inch white/black     0x1:2.9inch white/black/red    0x2:4.2inch white/black
+                                                                            # 0x3:4.2inch white/black/red       0x4:2.1inch white/black         0x5: 2.1inch white/black/red
                                  "BattVolt":batteryV,
                                  "Temperature":temperature,
                                  "PictureID":d["obj"][i]["data1"][38:46],    #BYTE 19, 20, 21, 22
@@ -113,6 +134,13 @@ def on_message(client, userdata, msg):
 
     # print(esl_devices)
 
+def on_publish(topic, payload, qos):
+    print("pub:",topic,payload,qos)
+    try :
+        client.publish(topic, payload, qos)
+    except Exception as e:
+        print('reason:',e)
+
 client = mqtt.Client("client_for_esl")
 
 client.on_connect = on_connect
@@ -132,19 +160,11 @@ client_tb.connect(server_tb, port_tb)
 client.loop_start()
 client_tb.loop_start()
 
-# device = 'test\" -u \"H3wn8ScdYAiFPurZVsv4'
-# on_publish_tb('v1/gateway/connect', device, 0)
-
-# request attributes
-# Topic: v1/gateway/attributes/request
-# Message = {"id":"1112", "device": "2735000A33DD", "client": "true", "key": "BattVolt"}
-# on_publish_tb('v1/gateway/attributes/request', json.dumps(Message), 0)
 
 while True:
-    device = input("device: ")
-    # device = 'test\" -u \"H3wn8ScdYAiFPurZVsv4'
-    on_publish_tb('v1/gateway/disconnect',device,0)
-    if device == 'break':
+    device = input()
+    # on_publish_tb('v1/gateway/disconnect',device,0)
+    if device == 'exit':
         break
     pass
 
