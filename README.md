@@ -1,12 +1,12 @@
 # thingsboard-gateway-python
 
-##项目结构
+## 项目结构
     thingsboard 为一个mqtt server
     thingsboard-Gateway 为一个mqtt client 与thingsboard 绑定
     另起一个mqtt server（localhost mqtt server）
     esl-gateway 与 localhost mqtt server 绑定，扫描附近的esl设备publish到localhost mqtt server
     
-##项目功能
+## 项目功能
         本脚本创建两个mqtt client，一个以thingsboard-gateway的名义授权绑定thingsboard
     另一个与localhost mqtt server绑定。
         subscribe esl-gateway publish 到 localhost mqtt server的附近esl设备信息。
