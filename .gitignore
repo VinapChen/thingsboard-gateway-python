@@ -2,3 +2,4 @@
 test.py
 gpio.py
 venv/*
+.idea/*

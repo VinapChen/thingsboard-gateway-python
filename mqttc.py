@@ -15,12 +15,12 @@ esl_type = []
 rpc_result = 'true'
 
 
-user_gateway = 'H3wn8ScdYAiFPurZVsv4'
-server_tb = '192.168.2.176'
+user_gateway = 'PCLoejIaP1QtJixywLHm'
+server_tb = 'localhost'
 port_tb = 1883
 
 server = 'localhost'
-port = 1883
+port = 1884
 
 def on_connect_tb(client_tb, userdata, flags, rc):
     print("Connected with result code t1:"+str(rc))
@@ -40,7 +40,7 @@ def on_message_tb(client_tb, userdata, msg):
     payload = str(msg.payload, encoding="utf-8")
     payload_json = eval(payload)
     if msg.topic == "v1/gateway/rpc":
-        print("json paylosd rpc id:",payload_json['data']['id'])
+        print("json payload rpc id:",payload_json['data']['id'])
         # params = eval(payload_json['data']['params'])
         # print("json paylosd rpc params:",params['id'],params['type'])
         device_name = payload_json['device']
@@ -150,7 +150,7 @@ def on_message_tb(client_tb, userdata, msg):
             rpc_result = 'Template id error'
 
         if rpc_result == 'true':
-            requrl = "http://0.0.0.0:8080/txt2json"
+            requrl = "http://abj-pubackstat-1.yunba.io:8080/txt2json"
             r = requests.post(requrl, data=json.dumps(data))
             print(r.text)
 
