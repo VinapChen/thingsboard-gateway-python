@@ -17,7 +17,7 @@
         根据rpc command 的参数，发送请求到smart price tag 服务端获取json数据，
         获取到json数据后publish到esl-gateway，esl-gateway会根据json数据中的esl设备mac地址去更新esl设备图片
         
-##RUN
+## RUN
     run thingsboard [https://github.com/msgbus/tasks/wiki/thingsboard-mac-build]
     打开 [http://localhost:8080] 登录  用户名：tenant@thingsboard.org  密码：tenant
     进入"设备" 新建一个网关设备，将mqttc.py的user_gateway变量设置成这个网关设备的token
