@@ -7,6 +7,7 @@ import os
 import time
 import requests
 import re
+import base64
 
 esl_gateway = ""
 esl_devices = []
@@ -66,14 +67,18 @@ def on_message_tb(client_tb, userdata, msg):
             print("temp_id error reason:",e)
             if rpc_result == 'true':
                 rpc_result = "Template id error"
-        try:
-            params = payload_json['data']['params']
-            temp_params = params.split(',')
-            params_len = len(temp_params)
-        except Exception as e:
-            print("params error reason:",e)
-            if rpc_result == 'true':
-                rpc_result = "Params error"
+
+
+        params = payload_json['data']['params']
+        # temp id == 99  picture mode
+        if temp_id != 99:
+            try:
+                temp_params = params.split(',')
+                params_len = len(temp_params)
+            except Exception as e:
+                print("params error reason:",e)
+                if rpc_result == 'true':
+                    rpc_result = "Params error"
 
         # print(temp_id,temp_params,params_len)
 
@@ -145,16 +150,32 @@ def on_message_tb(client_tb, userdata, msg):
                     data = {"data": {"title": temp_params[0],
                                      "subTitle": temp_params[1]}, "temp_id": temp_id, "size": size, "mac": device_mac,"picture_id":picture_id}
 
+        elif temp_id == 99:
+            # print(params)
+            picture_data = params.split(",")
+            # try:
+            #     img = base64.b64decode(picture_data[1])
+            #     file = open('./t.bmp', 'wb')
+            #     file.write(img)
+            #     file.close()
+            # except Exception as e:
+            #     print(e)
+            # rpc_result = "stop"
+            data = {"data": picture_data[1], "temp_id": temp_id, "size": size, "mac": device_mac,"picture_id": picture_id}
 
         else:
             rpc_result = 'Template id error'
 
         if rpc_result == 'true':
             requrl = "http://abj-pubackstat-1.yunba.io:8080/txt2json"
-            r = requests.post(requrl, data=json.dumps(data))
-            print(r.text)
-
-            on_publish('kbeacon/subaction/D03304000652',r.text,0)
+            # requrl = "http://localhost:8081/txt2json"
+            try:
+                r = requests.post(requrl, data=json.dumps(data))
+                # print(r.text)
+                on_publish('kbeacon/subaction/D03304000652',r.text,0)
+            except Exception as e:
+                rpc_result = 'API error'
+                print("api return error :",e)
 
 
         response_rpc = {"device": payload_json['device'], "id": payload_json['data']['id'], "data": {"success":rpc_result}}
@@ -171,6 +192,7 @@ def on_publish_tb(topic, payload, qos):
     except Exception as e:
         print("pub error:")
     # client_tb.disconnect()
+    return 0
 
 
 def on_connect(client, userdata, flags, rc):
@@ -255,6 +277,7 @@ def on_publish(topic, payload, qos):
     except Exception as e:
         print('reason:',e)
         rpc_result = 'The operation failed, please try again'
+    return 0
 
 client = mqtt.Client("client_for_esl")
 
